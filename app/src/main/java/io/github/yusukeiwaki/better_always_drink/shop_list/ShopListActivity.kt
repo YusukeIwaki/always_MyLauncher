@@ -27,7 +27,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         googleMap = map
         viewModel.focusedShop.observe(this) { focusedShop ->
             focusedShop?.let {
-                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(it, 13.0f))
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(it, 15.0f))
             }
         }
         viewModel.shopList.observe(this) { shopList ->
