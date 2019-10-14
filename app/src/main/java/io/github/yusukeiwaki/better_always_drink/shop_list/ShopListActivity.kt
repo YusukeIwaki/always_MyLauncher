@@ -4,12 +4,19 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.observe
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import io.github.yusukeiwaki.better_always_drink.R
+import io.github.yusukeiwaki.better_always_drink.extension.cameraPositionAsFlow
+import io.github.yusukeiwaki.better_always_drink.model.Shop
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.launch
 
 class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
@@ -25,14 +32,34 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        viewModel.focusedShop.observe(this) { focusedShop ->
+        viewModel.centerLatLng.observe(this) { focusedShop ->
             focusedShop?.let {
-                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(it, 15.0f))
+                googleMap.moveCamera(CameraUpdateFactory.newLatLng(it))
             }
+        }
+        viewModel.zoomLevel.observe(this) {
+            googleMap.moveCamera(CameraUpdateFactory.zoomTo(it))
         }
         viewModel.shopList.observe(this) { shopList ->
             shopList.forEachIndexed { idx, shop ->
-                googleMap.addMarker(MarkerOptions().position(shop).title("Marker ${idx}"))
+                val markerOptions = MarkerOptions()
+                    .position(LatLng(shop.lat, shop.lng))
+                    .title(shop.name)
+                val marker = googleMap.addMarker(markerOptions)
+                marker.tag = shop
+            }
+        }
+
+        googleMap.setOnMarkerClickListener { marker ->
+            (marker.tag as? Shop)?.let { shop ->
+                viewModel.onFocusedShopChanged(shop)
+            }
+            false
+        }
+        viewModel.viewModelScope.launch {
+            googleMap.cameraPositionAsFlow().debounce(300).collect { cameraPosition ->
+                viewModel.onLatLngChanged(cameraPosition.target)
+                viewModel.onZoomLevelChanged(cameraPosition.zoom)
             }
         }
     }
