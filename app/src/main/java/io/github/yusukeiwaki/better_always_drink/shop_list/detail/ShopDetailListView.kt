@@ -27,6 +27,7 @@ class ShopDetailListView : RecyclerView {
             }
             groupAdapter.add(ShopDetailDescriptionItem(shop))
             groupAdapter.add(ShopDetailDescriptionKeyValueItem(shop, ShopDetailDescriptionKeyValueItem.Key.BusinessHours))
+            groupAdapter.add(ShopDetailActionButtonsItem(shop))
         }
     }
 }
