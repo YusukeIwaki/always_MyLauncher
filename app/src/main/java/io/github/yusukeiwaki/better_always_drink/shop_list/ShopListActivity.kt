@@ -92,6 +92,10 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
+
+        // 初期位置を決めないと、アフリカの海が表示されるので、適当に初期位置を設定しておく。
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(33.2343214,131.6082574),15.0f))
+
         viewModel.focusedShop.observe(this) { focusedShop ->
             val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
             markers.forEach { marker ->
