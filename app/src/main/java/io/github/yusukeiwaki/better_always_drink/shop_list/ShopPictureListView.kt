@@ -14,7 +14,7 @@ class ShopPictureListView : RecyclerView {
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
 
     init {
-        layoutManager = LinearLayoutManager(context, HORIZONTAL, false)
+        layoutManager = LinearLayoutManager(context, VERTICAL, false)
     }
 
     fun setPictureUrls(pictureUrls: List<String>?) {

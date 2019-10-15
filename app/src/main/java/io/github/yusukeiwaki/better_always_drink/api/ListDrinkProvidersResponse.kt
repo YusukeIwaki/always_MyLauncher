@@ -27,8 +27,9 @@ data class ListDrinkProvidersResponse(
         val businessHours: String,
 
         // 緯度経度
-        val location: Location
+        val location: Location,
 
+        val pictures: List<Picture>
     ) {
         data class Location(val lat: Double, val lon: Double)
     }
