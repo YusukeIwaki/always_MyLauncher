@@ -6,6 +6,14 @@
         android:padding="24dp"
         android:layout_marginBottom="24dp">
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/always_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:text="set as ALWAYS"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/browse_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

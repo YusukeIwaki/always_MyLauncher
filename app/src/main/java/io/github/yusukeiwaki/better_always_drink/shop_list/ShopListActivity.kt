@@ -38,6 +38,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     private val viewModel: ShopListViewModel by viewModels()
 
     private val markers: ArrayList<Marker> = arrayListOf()
+    private val alwaysShopUuid: String? by AlwaysPreference(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,8 +60,22 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
             page.translationX = -offset
         }
 
-        viewModel.shopList.observe(this) {
-            viewPagerAdapter.submitList(it)
+        viewModel.shopList.observe(this) { newList ->
+            var handled = false
+            if (viewPagerAdapter.itemCount == 0) { // 初回に限り
+                alwaysShopUuid?.let { uuid -> // お気に入りのお店があれば
+                    val newPage = newList.indexOfFirst { shop -> shop.uuid == uuid }
+                    if (newPage >= 0) {
+                        // submit後にそのページにフォーカスを合わせる
+                        viewPagerAdapter.submitList(newList) {
+                            viewPager.setCurrentItem(newPage, false)
+                        }
+                        handled = true
+                    }
+                }
+            }
+
+            if (!handled) viewPagerAdapter.submitList(newList)
         }
         viewModel.focusedShop.observe(this) { focusedShop ->
             focusedShop?.let {
