@@ -2,6 +2,8 @@ package io.github.yusukeiwaki.better_always_drink.shop_list
 
 import android.util.Log
 import androidx.lifecycle.*
+import com.google.android.gms.maps.CameraUpdate
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import io.github.yusukeiwaki.better_always_drink.api.AlwaysApiClient
 import io.github.yusukeiwaki.better_always_drink.model.Shop
@@ -15,15 +17,19 @@ class ShopListViewModel : ViewModel() {
 
     private val _focusedShop = MutableLiveData<Shop?>()
 
-    private val _centerLatLng = MutableLiveData<LatLng>()
-    private val _zoomLevel = MutableLiveData<Float>()
+    private val _lastLatLng = MutableLiveData<LatLng>()
+    private val _lastZoomLevel = MutableLiveData<Float>()
+
+    private val _defaultCameraUpdate = MutableLiveData<CameraUpdate>()
 
     val shopList: LiveData<List<Shop>> get() = _shopList
 
     val focusedShop: LiveData<Shop?> get() = _focusedShop.distinctUntilChanged()
 
-    val centerLatLng: LiveData<LatLng> get() = _centerLatLng.distinctUntilChanged()
-    val zoomLevel: LiveData<Float> get() = _zoomLevel.distinctUntilChanged()
+    val lastLatLng: LiveData<LatLng> get() = _lastLatLng.distinctUntilChanged()
+    val lastZoomLevel: LiveData<Float> get() = _lastZoomLevel.distinctUntilChanged()
+
+    val defaultCameraUpdate: LiveData<CameraUpdate> get() = _defaultCameraUpdate.distinctUntilChanged()
 
     init {
         val area = "3a2eefa2" //福岡
@@ -59,10 +65,7 @@ class ShopListViewModel : ViewModel() {
     }
 
     private fun onDefaultPositionLoaded(defaultPosition: LatLng, defaultZoomLevel: Float) {
-        _focusedShop.value ?: run {
-            _centerLatLng.value = defaultPosition
-            _zoomLevel.value = defaultZoomLevel
-        }
+        _defaultCameraUpdate.value = CameraUpdateFactory.newLatLngZoom(defaultPosition, defaultZoomLevel)
     }
 
     fun onFocusedShopChanged(newShop: Shop?) {
@@ -70,10 +73,10 @@ class ShopListViewModel : ViewModel() {
     }
 
     fun onLatLngChanged(newLatLng: LatLng) {
-        _centerLatLng.value = newLatLng
+        _lastLatLng.value = newLatLng
     }
 
     fun onZoomLevelChanged(newZoomLevel: Float) {
-        _zoomLevel.value = newZoomLevel
+        _lastZoomLevel.value = newZoomLevel
     }
 }

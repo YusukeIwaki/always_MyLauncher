@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="@dimen/shop_card_margin"
+        app:cardUseCompatPadding="true"
+        app:contentPadding="8dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@{shop.name}"/>
+    </com.google.android.material.card.MaterialCardView>
+    <data>
+        <variable
+            name="shop"
+            type="io.github.yusukeiwaki.better_always_drink.model.Shop" />
+    </data>
+</layout>
