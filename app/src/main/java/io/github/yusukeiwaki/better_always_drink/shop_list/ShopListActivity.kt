@@ -166,7 +166,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             .start()
         viewPager.animate()
-            .translationY(height * 0.9f)
+            .translationY(height.toFloat())
             .start()
     }
 
