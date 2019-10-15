@@ -2,15 +2,13 @@ package io.github.yusukeiwaki.better_always_drink.shop_list
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.observe
 import androidx.lifecycle.viewModelScope
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.OnMapReadyCallback
-import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.*
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -23,6 +21,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
+    private lateinit var mapFragmentAsView: View
+    private lateinit var viewPager: ViewPager2
     private lateinit var googleMap: GoogleMap
     private val viewModel: ShopListViewModel by viewModels()
 
@@ -33,10 +33,11 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         setContentView(R.layout.activity_shop_list)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        mapFragmentAsView = findViewById(R.id.map)
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        val viewPager: ViewPager2 = findViewById(R.id.view_pager)
+        viewPager = findViewById(R.id.view_pager)
         val viewPagerAdapter = ShopListAdapter()
 
         // 左右のカードを少しだけ見えるようにする
@@ -79,6 +80,9 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         viewModel.focusedShop.observe(this) { focusedShop ->
             focusedShop?.let {
                 googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(it.lat, it.lng)))
+                onShopFocused()
+            } ?: run {
+                onShopUnfocused()
             }
         }
         viewModel.shopList.observe(this) { shopList ->
@@ -104,11 +108,36 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             false
         }
+        googleMap.setOnMapClickListener {
+            if (!markers.any { it.isInfoWindowShown }) {
+                viewModel.onFocusedShopChanged(null)
+            }
+        }
         viewModel.viewModelScope.launch {
             googleMap.cameraPositionAsFlow().debounce(300).collect { cameraPosition ->
                 viewModel.onLatLngChanged(cameraPosition.target)
                 viewModel.onZoomLevelChanged(cameraPosition.zoom)
             }
         }
+    }
+
+    private fun onShopFocused() {
+        val height = viewPager.height
+        mapFragmentAsView.animate()
+            .translationY(-height / 2.0f)
+            .start()
+        viewPager.animate()
+            .translationY(0.0f)
+            .start()
+    }
+
+    private fun onShopUnfocused() {
+        val height = viewPager.height
+        mapFragmentAsView.animate()
+            .translationY(0.0f)
+            .start()
+        viewPager.animate()
+            .translationY(height * 0.9f)
+            .start()
     }
 }
