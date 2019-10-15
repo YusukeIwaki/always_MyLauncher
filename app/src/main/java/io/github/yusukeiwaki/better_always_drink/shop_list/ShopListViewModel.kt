@@ -46,7 +46,8 @@ class ShopListViewModel : ViewModel() {
                         businessHoursDescription = menu.pbProvider.businessHours,
                         lat = menu.pbProvider.location.lat,
                         lng = menu.pbProvider.location.lon,
-                        pictureUrls = (menu.pictures + menu.pbProvider.pictures).map { picture -> picture.pictureUrl.largeUrl })
+                        thumbnailUrl = menu.pictures.firstOrNull()?.pictureUrl?.largeUrl,
+                        pictureUrls = menu.pbProvider.pictures.map { picture -> picture.pictureUrl.largeUrl })
                 }
                 onShopListLoaded(shopList)
 

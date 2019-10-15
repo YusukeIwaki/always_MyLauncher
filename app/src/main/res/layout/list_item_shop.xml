@@ -5,7 +5,6 @@
         <variable
             name="shop"
             type="io.github.yusukeiwaki.better_always_drink.model.Shop" />
-        <import type="android.view.View" />
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -14,11 +13,10 @@
         android:layout_margin="@dimen/shop_card_margin"
         app:cardUseCompatPadding="true">
 
-        <io.github.yusukeiwaki.better_always_drink.shop_list.ShopPictureListView
+        <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopDetailListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:pictureUrls="@{shop.pictureUrls}"
-            android:visibility="@{shop.pictureUrls.empty ? View.GONE : View.VISIBLE}"/>
+            app:shop="@{shop}"/>
 
 
         <LinearLayout

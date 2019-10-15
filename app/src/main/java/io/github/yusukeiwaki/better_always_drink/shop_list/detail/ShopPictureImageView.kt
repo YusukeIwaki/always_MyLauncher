@@ -1,10 +1,11 @@
-package io.github.yusukeiwaki.better_always_drink.shop_list
+package io.github.yusukeiwaki.better_always_drink.shop_list.detail
 
 import android.content.Context
 import android.util.AttributeSet
 
 import androidx.appcompat.widget.AppCompatImageView
 import com.squareup.picasso.Picasso
+
 
 class ShopPictureImageView : AppCompatImageView {
     constructor(context: Context) : super(context)
@@ -15,5 +16,11 @@ class ShopPictureImageView : AppCompatImageView {
 
     fun setImageUrl(imageUrl: String?) {
         Picasso.get().load(imageUrl).into(this)
+    }
+
+    // 幅(match_parent)に合わせた正方形にする
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        setMeasuredDimension(width, width)
     }
 }

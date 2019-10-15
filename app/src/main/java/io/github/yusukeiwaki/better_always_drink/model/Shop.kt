@@ -10,6 +10,7 @@ data class Shop(
     val businessHoursDescription: String,
     val lat: Double,
     val lng: Double,
+    val thumbnailUrl: String?,
     val pictureUrls: List<String>
 ) {
     class DiffUtilCallback: DiffUtil.ItemCallback<Shop>() {
