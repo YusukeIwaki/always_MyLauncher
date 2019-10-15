@@ -25,6 +25,7 @@ class ShopListViewModel : ViewModel() {
     val shopList: LiveData<List<Shop>> get() = _shopList
 
     val focusedShop: LiveData<Shop?> get() = _focusedShop.distinctUntilChanged()
+    val hasFocusedShop get() = _focusedShop.value != null
 
     val lastLatLng: LiveData<LatLng> get() = _lastLatLng.distinctUntilChanged()
     val lastZoomLevel: LiveData<Float> get() = _lastZoomLevel.distinctUntilChanged()

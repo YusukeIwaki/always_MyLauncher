@@ -1,24 +1,35 @@
 package io.github.yusukeiwaki.better_always_drink.shop_list
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.observe
 import androidx.lifecycle.viewModelScope
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.gms.maps.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import io.github.yusukeiwaki.better_always_drink.R
 import io.github.yusukeiwaki.better_always_drink.extension.cameraPositionAsFlow
 import io.github.yusukeiwaki.better_always_drink.extension.observeOnce
 import io.github.yusukeiwaki.better_always_drink.model.Shop
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import androidx.core.graphics.drawable.DrawableCompat
+import android.graphics.Bitmap
+import androidx.core.content.res.ResourcesCompat
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
+import com.google.android.gms.maps.model.BitmapDescriptor
+import android.graphics.Canvas
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import io.github.yusukeiwaki.better_always_drink.R
+
 
 class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var mapFragmentAsView: View
@@ -54,17 +65,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         viewModel.focusedShop.observe(this) { focusedShop ->
             focusedShop?.let {
                 viewPager.currentItem = viewModel.shopList.value!!.indexOfFirst { shop -> shop.uuid == focusedShop.uuid }
-                markers.forEach { marker ->
-                    (marker.tag as? Shop)?.let { shop ->
-                        if (shop.uuid == focusedShop.uuid) {
-                            marker.showInfoWindow()
-                        } else {
-                            if (marker.isInfoWindowShown) {
-                                marker.hideInfoWindow()
-                            }
-                        }
-                    }
-                }
             }
         }
         viewPager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback(){
@@ -78,6 +78,21 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
         viewModel.focusedShop.observe(this) { focusedShop ->
+            val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
+            markers.forEach { marker ->
+                (marker.tag as? Shop)?.let { shop ->
+                    if (shop.uuid == focusedShop?.uuid) {
+                        marker.setIcon(createBitmapDescriptorFromVector(R.drawable.ic_local_cafe_24dp, getColor(R.color.markerSelected)))
+                        marker.showInfoWindow()
+                    } else {
+                        marker.setIcon(defaultMarker)
+                        if (marker.isInfoWindowShown) {
+                            marker.hideInfoWindow()
+                        }
+                    }
+                }
+            }
+
             focusedShop?.let {
                 googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(it.lat, it.lng)))
                 onShopFocused()
@@ -87,17 +102,25 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         viewModel.shopList.observe(this) { shopList ->
             markers.clear()
+            val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
             shopList.forEach { shop ->
+                val title =
+                    if (shop.roughLocationDescription.isNullOrBlank())
+                        shop.name
+                    else
+                        "${shop.roughLocationDescription} - ${shop.name}"
+
                 val markerOptions = MarkerOptions()
+                    .icon(defaultMarker)
                     .position(LatLng(shop.lat, shop.lng))
-                    .title(shop.name)
+                    .title(title)
                 val marker = googleMap.addMarker(markerOptions)
                 marker.tag = shop
                 markers.add(marker)
             }
         }
         viewModel.defaultCameraUpdate.observeOnce(this) { defaultCameraUpdate ->
-            if (viewModel.focusedShop.value == null) {
+            if (!viewModel.hasFocusedShop) {
                 googleMap.moveCamera(defaultCameraUpdate)
             }
         }
@@ -125,6 +148,9 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         val height = viewPager.height
         mapFragmentAsView.animate()
             .translationY(-height / 2.0f)
+            .withEndAction {
+                window.decorView.systemUiVisibility = window.decorView.systemUiVisibility.or(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)
+            }
             .start()
         viewPager.animate()
             .translationY(0.0f)
@@ -135,9 +161,32 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         val height = viewPager.height
         mapFragmentAsView.animate()
             .translationY(0.0f)
+            .withStartAction {
+                window.decorView.systemUiVisibility = window.decorView.systemUiVisibility.and(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv())
+            }
             .start()
         viewPager.animate()
             .translationY(height * 0.9f)
             .start()
+    }
+
+    fun createBitmapDescriptorFromVector(@DrawableRes vectorResourceId: Int, @ColorInt tintColor: Int): BitmapDescriptor {
+        val vectorDrawable = ResourcesCompat.getDrawable(resources, vectorResourceId, null)
+            ?: return BitmapDescriptorFactory.defaultMarker()
+
+        val bitmap = Bitmap.createBitmap(vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight())
+        DrawableCompat.setTint(vectorDrawable, tintColor)
+        vectorDrawable.draw(canvas)
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    override fun onBackPressed() {
+        if (viewModel.hasFocusedShop) {
+            viewModel.onFocusedShopChanged(null)
+        } else {
+            super.onBackPressed()
+        }
     }
 }
