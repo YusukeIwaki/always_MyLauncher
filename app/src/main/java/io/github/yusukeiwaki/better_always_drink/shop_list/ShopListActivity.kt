@@ -24,17 +24,19 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import com.google.android.gms.maps.model.BitmapDescriptor
 import android.graphics.Canvas
+import android.view.ViewGroup
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import io.github.yusukeiwaki.better_always_drink.R
 
 
 class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
-    private lateinit var mapFragmentAsView: View
     private lateinit var viewPager: ViewPager2
     private lateinit var googleMap: GoogleMap
+    private lateinit var bottomSheet: BottomSheetBehavior<View>
     private val viewModel: ShopListViewModel by viewModels()
 
     private val markers: ArrayList<Marker> = arrayListOf()
@@ -43,13 +45,14 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_shop_list)
+        window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE.or(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN))
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        mapFragmentAsView = findViewById(R.id.map)
         val mapFragment = supportFragmentManager.findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
         viewPager = findViewById(R.id.view_pager)
+        bottomSheet = BottomSheetBehavior.from(findViewById(R.id.bottom_sheet_container))
         val viewPagerAdapter = ShopListAdapter()
 
         // 左右のカードを少しだけ見えるようにする
@@ -87,6 +90,14 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
                 viewModel.onFocusedShopChanged(viewModel.shopList.value!![position])
             }
         })
+        bottomSheet.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onSlide(view: View, slideOffset: Float) { }
+
+            override fun onStateChanged(view: View, newState: Int) {
+                updateBottomSheetState(newState)
+            }
+        })
+        updateBottomSheetState(bottomSheet.state)
         viewPager.adapter = viewPagerAdapter
     }
 
@@ -163,30 +174,35 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
+    private fun updateBottomSheetState(newState: Int) {
+        val newViewPagerHeight =
+            if (newState == BottomSheetBehavior.STATE_EXPANDED)
+                ViewGroup.LayoutParams.MATCH_PARENT
+            else
+                bottomSheet.peekHeight
+
+        if (viewPager.layoutParams.height != newViewPagerHeight) {
+            viewPager.layoutParams = viewPager.layoutParams.apply { height = newViewPagerHeight }
+        }
+
+        if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+            viewModel.onFocusedShopChanged(null) // ボトムシートを手で引っ込めた場合には、キャンセル扱いにする
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility.and(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv())
+        } else {
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility.or(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)
+        }
+    }
+
     private fun onShopFocused() {
-        val height = viewPager.height
-        mapFragmentAsView.animate()
-            .translationY(-height / 2.0f)
-            .withEndAction {
-                window.decorView.systemUiVisibility = window.decorView.systemUiVisibility.or(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR)
-            }
-            .start()
-        viewPager.animate()
-            .translationY(0.0f)
-            .start()
+        if (bottomSheet.state == BottomSheetBehavior.STATE_HIDDEN) {
+            bottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
+        }
     }
 
     private fun onShopUnfocused() {
-        val height = viewPager.height
-        mapFragmentAsView.animate()
-            .translationY(0.0f)
-            .withStartAction {
-                window.decorView.systemUiVisibility = window.decorView.systemUiVisibility.and(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv())
-            }
-            .start()
-        viewPager.animate()
-            .translationY(height.toFloat())
-            .start()
+        if (bottomSheet.state != BottomSheetBehavior.STATE_HIDDEN) {
+            bottomSheet.state = BottomSheetBehavior.STATE_HIDDEN
+        }
     }
 
     fun createBitmapDescriptorFromVector(@DrawableRes vectorResourceId: Int, @ColorInt tintColor: Int): BitmapDescriptor {
@@ -202,7 +218,9 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     override fun onBackPressed() {
-        if (viewModel.hasFocusedShop) {
+        if (bottomSheet.state == BottomSheetBehavior.STATE_EXPANDED) {
+            bottomSheet.state = BottomSheetBehavior.STATE_COLLAPSED
+        } else if (viewModel.hasFocusedShop) {
             viewModel.onFocusedShopChanged(null)
         } else {
             super.onBackPressed()
