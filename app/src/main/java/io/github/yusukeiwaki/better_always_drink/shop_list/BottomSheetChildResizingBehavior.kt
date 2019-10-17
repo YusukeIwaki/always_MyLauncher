@@ -15,14 +15,14 @@ class BottomSheetChildResizingBehavior<V : View>(context: Context, attrs: Attrib
     private var resizingChildRef: WeakReference<View> = WeakReference<View>(null)
 
     override fun layoutDependsOn(parent: CoordinatorLayout, child: V, dependency: View): Boolean {
-        return super.layoutDependsOn(parent, child, dependency).also {
-            (child as? ViewGroup)?.let { viewGroup ->
-                if (viewGroup.childCount > 0) {
-                    parentRef = WeakReference(parent)
-                    resizingChildRef = WeakReference(viewGroup.getChildAt(0))
-                }
+        (child as? ViewGroup)?.let { viewGroup ->
+            if (viewGroup.childCount > 0) {
+                parentRef = WeakReference(parent)
+                resizingChildRef = WeakReference(viewGroup.getChildAt(0))
             }
         }
+
+        return super.layoutDependsOn(parent, child, dependency)
     }
 
     init {
