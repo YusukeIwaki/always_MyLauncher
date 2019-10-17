@@ -20,8 +20,21 @@ class ParallaxBehavior<V : View>(context: Context, attrs: AttributeSet) : Coordi
     }
 
     override fun onDependentViewChanged(parent: CoordinatorLayout, child: V, dependency: View): Boolean {
+        val bottomSheet = BottomSheetBehavior.from(dependency)
+
         val bottomSheetOffset = parent.bottom - dependency.top
-        child.translationY = - bottomSheetOffset.toFloat() / 2
+        if (bottomSheetOffset < bottomSheet.peekHeight) {
+            child.translationY = -bottomSheetOffset.toFloat() / 2
+        }
+
+        if (bottomSheet.peekHeight > 0 && bottomSheet.peekHeight < parent.bottom) {
+            val offset = 1.0f * dependency.top / (parent.bottom - bottomSheet.peekHeight)
+
+            child.alpha =
+                if (offset < 0) 0.0f
+                else if (offset <= 1) offset
+                else 1.0f
+        }
         return true
     }
 }
