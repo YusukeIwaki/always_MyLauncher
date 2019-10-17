@@ -54,6 +54,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
 
         viewPager = findViewById(R.id.view_pager)
         bottomSheet = BottomSheetBehavior.from(findViewById(R.id.bottom_sheet_container))
+        bottomSheet.state = BottomSheetBehavior.STATE_HIDDEN
         val viewPagerAdapter = ShopListAdapter()
 
         // 左右のカードを少しだけ見えるようにする
@@ -84,6 +85,9 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         viewModel.focusedShop.observe(this) { focusedShop ->
             focusedShop?.let {
                 viewPager.currentItem = viewModel.shopList.value!!.indexOfFirst { shop -> shop.uuid == focusedShop.uuid }
+                onShopFocused()
+            } ?: run {
+                onShopUnfocused()
             }
         }
         viewPager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback(){
@@ -126,9 +130,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
 
             focusedShop?.let {
                 googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(it.lat, it.lng)))
-                onShopFocused()
-            } ?: run {
-                onShopUnfocused()
             }
         }
         viewModel.shopList.observe(this) { shopList ->
@@ -176,16 +177,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun updateBottomSheetState(newState: Int) {
-        val newViewPagerHeight =
-            if (newState == BottomSheetBehavior.STATE_EXPANDED)
-                ViewGroup.LayoutParams.MATCH_PARENT
-            else
-                bottomSheet.peekHeight
-
-        if (viewPager.layoutParams.height != newViewPagerHeight) {
-            viewPager.layoutParams = viewPager.layoutParams.apply { height = newViewPagerHeight }
-        }
-
         if (newState == BottomSheetBehavior.STATE_HIDDEN) {
             viewModel.onFocusedShopChanged(null) // ボトムシートを手で引っ込めた場合には、キャンセル扱いにする
         }
