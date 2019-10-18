@@ -8,14 +8,14 @@
     </data>
 
     <com.google.android.material.card.MaterialCardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/shop_card_margin"
-        app:cardElevation="8dp">
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_margin="8dp"
+        app:cardElevation="4dp">
 
         <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopPictureImageView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
             android:scaleType="centerCrop"
             app:imageUrl="@{url}"/>
     </com.google.android.material.card.MaterialCardView>

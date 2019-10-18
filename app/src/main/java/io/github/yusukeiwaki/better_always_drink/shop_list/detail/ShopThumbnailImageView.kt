@@ -7,7 +7,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import com.squareup.picasso.Picasso
 
 
-class ShopPictureImageView : AppCompatImageView {
+class ShopThumbnailImageView : AppCompatImageView {
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
@@ -18,9 +18,9 @@ class ShopPictureImageView : AppCompatImageView {
         Picasso.get().load(imageUrl).into(this)
     }
 
-    // 高さ(match_parent)に合わせた正方形にする
+    // 幅(match_parent)に合わせた正方形にする
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val height = MeasureSpec.getSize(heightMeasureSpec)
-        setMeasuredDimension(height, height)
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        setMeasuredDimension(width, width)
     }
 }

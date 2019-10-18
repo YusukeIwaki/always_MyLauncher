@@ -3,13 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <data>
         <variable
-            name="url"
-            type="String" />
+            name="shop"
+            type="io.github.yusukeiwaki.better_always_drink.model.Shop" />
     </data>
 
-    <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopThumbnailImageView
+    <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopDetailPictureListView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scaleType="centerCrop"
-        app:imageUrl="@{url}"/>
+        android:layout_height="240dp"
+        app:shop="@{shop}"/>
 </layout>

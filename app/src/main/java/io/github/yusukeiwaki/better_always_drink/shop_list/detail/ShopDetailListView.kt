@@ -22,8 +22,8 @@ class ShopDetailListView : RecyclerView {
     fun setShop(shop: Shop) {
         adapter = GroupAdapter<GroupieViewHolder>().also { groupAdapter ->
             groupAdapter.add(ShopThumbnailItem(shop))
-            repeat(shop.pictureUrls.size) {
-                groupAdapter.add(ShopPictureItem(shop))
+            if (shop.pictureUrls.isNotEmpty()) {
+                groupAdapter.add(ShopPictureListItem(shop))
             }
             groupAdapter.add(ShopDetailDescriptionItem(shop))
             groupAdapter.add(ShopDetailDescriptionKeyValueItem(shop, ShopDetailDescriptionKeyValueItem.Key.BusinessHours))
