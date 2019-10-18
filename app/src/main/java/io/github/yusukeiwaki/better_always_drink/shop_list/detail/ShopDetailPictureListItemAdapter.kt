@@ -4,12 +4,8 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import io.github.yusukeiwaki.better_always_drink.R
-import io.github.yusukeiwaki.better_always_drink.databinding.ListItemShopBinding
 import io.github.yusukeiwaki.better_always_drink.databinding.ListItemShopPictureListItemBinding
-import io.github.yusukeiwaki.better_always_drink.shop_list.ShopListViewHolder
-
 
 class ShopDetailPictureListItemAdapter: ListAdapter<String, ShopDetailPictureListItemViewHolder>(StringItemDiffUtilCallback()) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ShopDetailPictureListItemViewHolder {
