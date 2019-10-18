@@ -1,0 +1,15 @@
+version: "3"
+services:
+  android-build:
+    build: .
+    image: docker-android-build
+    volumes:
+      - .:/android
+      - gradle-cache:/root/.gradle
+      - ~/.android/debug.keystore:/root/.android/debug.keystore:ro # CIで使うときになったら真面目に考える
+    working_dir: /android
+    command: ./gradlew assembleDebug
+
+volumes:
+  gradle-cache:
+    driver: local
