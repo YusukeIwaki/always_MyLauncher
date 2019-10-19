@@ -1,23 +1,18 @@
 package io.github.yusukeiwaki.better_always_drink.shop_list
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
-import androidx.annotation.ColorInt
-import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.observe
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.maps.android.clustering.ClusterManager
 import io.github.yusukeiwaki.better_always_drink.R
 import io.github.yusukeiwaki.better_always_drink.extension.observeOnce
 import io.github.yusukeiwaki.better_always_drink.model.Shop
@@ -26,10 +21,10 @@ import io.github.yusukeiwaki.better_always_drink.model.Shop
 class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var viewPager: ViewPager2
     private lateinit var googleMap: GoogleMap
+    private lateinit var shopListClusterRenderer: ShopListClusterRenderer
     private lateinit var bottomSheet: BottomSheetBehavior<View>
     private val viewModel: ShopListViewModel by viewModels()
 
-    private val markers: ArrayList<Marker> = arrayListOf()
     private val alwaysShopUuid: String? by AlwaysPreference(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,47 +93,29 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
+        val shopListClusterManager = ClusterManager<Shop>(this, googleMap)
+        shopListClusterRenderer = ShopListClusterRenderer(this, googleMap, shopListClusterManager, viewModel)
+        shopListClusterManager.renderer = shopListClusterRenderer
+        googleMap.setOnCameraIdleListener(shopListClusterManager)
+        googleMap.setOnMarkerClickListener(shopListClusterManager)
+        googleMap.setOnInfoWindowClickListener(shopListClusterManager)
 
         // 初期位置を決めないと、アフリカの海が表示されるので、適当に初期位置を設定しておく。
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(33.2343214,131.6082574),15.0f))
 
+
         viewModel.focusedShop.observe(this) { focusedShop ->
-            val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
-            markers.forEach { marker ->
-                (marker.tag as? Shop)?.let { shop ->
-                    if (shop.uuid == focusedShop?.uuid) {
-                        marker.setIcon(createBitmapDescriptorFromVector(R.drawable.ic_local_cafe_24dp, getColor(R.color.markerSelected)))
-                        marker.showInfoWindow()
-                    } else {
-                        marker.setIcon(defaultMarker)
-                        if (marker.isInfoWindowShown) {
-                            marker.hideInfoWindow()
-                        }
-                    }
-                }
-            }
+            shopListClusterRenderer.updateSelectedShop(focusedShop)
 
             focusedShop?.let {
                 googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(it.lat, it.lng)))
             }
         }
         viewModel.shopList.observe(this) { shopList ->
-            markers.clear()
-            val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
-            shopList.forEach { shop ->
-                val title =
-                    if (shop.roughLocationDescription.isNullOrBlank())
-                        shop.name
-                    else
-                        "${shop.roughLocationDescription} - ${shop.name}"
-
-                val markerOptions = MarkerOptions()
-                    .icon(defaultMarker)
-                    .position(LatLng(shop.lat, shop.lng))
-                    .title(title)
-                val marker = googleMap.addMarker(markerOptions)
-                marker.tag = shop
-                markers.add(marker)
+            shopListClusterManager.apply {
+                clearItems()
+                addItems(shopList)
+                cluster()
             }
         }
         viewModel.defaultCameraUpdate.observeOnce(this) { defaultCameraUpdate ->
@@ -147,21 +124,13 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
 
-        googleMap.setOnMarkerClickListener { marker ->
-            (marker.tag as? Shop)?.let { shop ->
-                viewModel.onFocusedShopChanged(shop)
-            }
+
+        shopListClusterManager.setOnClusterItemClickListener { shop ->
+            viewModel.onFocusedShopChanged(shop)
             false
         }
         googleMap.setOnMapClickListener {
-            if (!markers.any { it.isInfoWindowShown }) {
-                viewModel.onFocusedShopChanged(null)
-            }
-        }
-        googleMap.setOnCameraIdleListener {
-            val cameraPosition = googleMap.cameraPosition
-            viewModel.onLatLngChanged(cameraPosition.target)
-            viewModel.onZoomLevelChanged(cameraPosition.zoom)
+            viewModel.onFocusedShopChanged(null)
         }
     }
 
@@ -181,18 +150,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         if (bottomSheet.state != BottomSheetBehavior.STATE_HIDDEN) {
             bottomSheet.state = BottomSheetBehavior.STATE_HIDDEN
         }
-    }
-
-    fun createBitmapDescriptorFromVector(@DrawableRes vectorResourceId: Int, @ColorInt tintColor: Int): BitmapDescriptor {
-        val vectorDrawable = ResourcesCompat.getDrawable(resources, vectorResourceId, null)
-            ?: return BitmapDescriptorFactory.defaultMarker()
-
-        val bitmap = Bitmap.createBitmap(vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight())
-        DrawableCompat.setTint(vectorDrawable, tintColor)
-        vectorDrawable.draw(canvas)
-        return BitmapDescriptorFactory.fromBitmap(bitmap)
     }
 
     override fun onBackPressed() {
