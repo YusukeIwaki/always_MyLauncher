@@ -1,36 +1,26 @@
 package io.github.yusukeiwaki.better_always_drink.shop_list
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.observe
-import androidx.lifecycle.viewModelScope
-import androidx.viewpager2.widget.ViewPager2
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
-import io.github.yusukeiwaki.better_always_drink.extension.cameraPositionAsFlow
-import io.github.yusukeiwaki.better_always_drink.extension.observeOnce
-import io.github.yusukeiwaki.better_always_drink.model.Shop
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.launch
-import androidx.core.graphics.drawable.DrawableCompat
-import android.graphics.Bitmap
-import androidx.core.content.res.ResourcesCompat
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
-import com.google.android.gms.maps.model.BitmapDescriptor
-import android.graphics.Canvas
-import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.DrawableCompat
+import androidx.lifecycle.observe
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.*
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import io.github.yusukeiwaki.better_always_drink.R
+import io.github.yusukeiwaki.better_always_drink.extension.observeOnce
+import io.github.yusukeiwaki.better_always_drink.model.Shop
 
 
 class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -168,11 +158,10 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
                 viewModel.onFocusedShopChanged(null)
             }
         }
-        viewModel.viewModelScope.launch {
-            googleMap.cameraPositionAsFlow().debounce(300).collect { cameraPosition ->
-                viewModel.onLatLngChanged(cameraPosition.target)
-                viewModel.onZoomLevelChanged(cameraPosition.zoom)
-            }
+        googleMap.setOnCameraIdleListener {
+            val cameraPosition = googleMap.cameraPosition
+            viewModel.onLatLngChanged(cameraPosition.target)
+            viewModel.onZoomLevelChanged(cameraPosition.zoom)
         }
     }
 
