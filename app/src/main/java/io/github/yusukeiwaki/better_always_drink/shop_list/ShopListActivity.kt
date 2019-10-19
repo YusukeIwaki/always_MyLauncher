@@ -86,8 +86,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         googleMap.setOnInfoWindowClickListener(shopListClusterManager)
 
         // 初期位置を決めないと、アフリカの海が表示されるので、適当に初期位置を設定しておく。
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(33.2343214,131.6082574),15.0f))
-
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(34.6870728, 135.0490244),5.0f))
 
         viewModel.focusedShop.observe(this) { focusedShop ->
             shopListClusterRenderer.updateSelectedShop(focusedShop)
@@ -115,12 +114,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
                 cluster()
             }
         }
-        viewModel.defaultCameraUpdate.observe(this) { defaultCameraUpdate ->
-            if (!viewModel.hasFocusedShop) {
-                googleMap.moveCamera(defaultCameraUpdate)
-            }
-        }
-
 
         shopListClusterManager.setOnClusterClickListener { cluster ->
             cluster?.let{ shopListClusterRenderer.nearestServiceAreaFor(it) }?.let { serviceArea ->

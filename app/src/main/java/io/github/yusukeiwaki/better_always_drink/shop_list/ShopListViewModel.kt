@@ -2,8 +2,6 @@ package io.github.yusukeiwaki.better_always_drink.shop_list
 
 import android.util.Log
 import androidx.lifecycle.*
-import com.google.android.gms.maps.CameraUpdate
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import io.github.yusukeiwaki.better_always_drink.api.AlwaysApiClient
 import io.github.yusukeiwaki.better_always_drink.model.ServiceArea
@@ -23,8 +21,6 @@ class ShopListViewModel : ViewModel() {
     private val _lastLatLng = MutableLiveData<LatLng>()
     private val _lastZoomLevel = MutableLiveData<Float>()
 
-    private val _defaultCameraUpdate = MutableLiveData<CameraUpdate>()
-
     val serviceAreaList: LiveData<List<ServiceArea>> get() = _serviceAreaList
     val shopList: LiveData<List<Shop>> get() = _shopList
 
@@ -36,8 +32,6 @@ class ShopListViewModel : ViewModel() {
     val lastLatLng: LiveData<LatLng> get() = _lastLatLng.distinctUntilChanged()
     val lastZoomLevel: LiveData<Float> get() = _lastZoomLevel.distinctUntilChanged()
     val lastZoomLevelValue: Float? get() = _lastZoomLevel.value
-
-    val defaultCameraUpdate: LiveData<CameraUpdate> get() = _defaultCameraUpdate.distinctUntilChanged()
 
     init {
         viewModelScope.launch {
@@ -53,9 +47,10 @@ class ShopListViewModel : ViewModel() {
                         zoom = place.zoom.toFloat()
                     )
                 }.toMutableList()
-                serviceAreaList.firstOrNull { area -> area.zoom < ShopListClusterRenderer.ZOOM_THRESHOLD }?.let { wideArea ->
-                    onWideServiceAreaLoaded(wideArea)
-                    serviceAreaList.remove(wideArea)
+
+                //「全国」らしきもの（ズームレベルが低いもの）を削除する
+                serviceAreaList.firstOrNull { area -> area.zoom < ShopListClusterRenderer.ZOOM_THRESHOLD }?.let {
+                    serviceAreaList.remove(it)
                 }
                 onServiceAreaListLoaded(serviceAreaList)
 
@@ -76,11 +71,6 @@ class ShopListViewModel : ViewModel() {
                 Log.e("ShopListViewModel", "error", throwable)
             }
         }
-    }
-
-    // 「全国」のエリア情報が取得できたときに呼ばれる。
-    private fun onWideServiceAreaLoaded(wideServiceArea: ServiceArea) {
-        _defaultCameraUpdate.value = CameraUpdateFactory.newLatLngZoom(LatLng(wideServiceArea.lat, wideServiceArea.lng), wideServiceArea.zoom)
     }
 
     // エリア情報一覧が取得できたときに呼ばれる。ただし「全国」は含めていない。
