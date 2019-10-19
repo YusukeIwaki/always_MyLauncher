@@ -23,7 +23,7 @@ class ParallaxBehavior<V : View>(context: Context, attrs: AttributeSet) : Coordi
         val bottomSheet = BottomSheetBehavior.from(dependency)
 
         val bottomSheetOffset = parent.bottom - dependency.top
-        if (bottomSheetOffset < bottomSheet.peekHeight) {
+        if (bottomSheetOffset <= bottomSheet.peekHeight) {
             child.translationY = -bottomSheetOffset.toFloat() / 2
         }
 
