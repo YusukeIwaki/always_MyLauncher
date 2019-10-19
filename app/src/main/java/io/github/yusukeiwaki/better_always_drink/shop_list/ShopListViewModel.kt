@@ -98,10 +98,16 @@ class ShopListViewModel : ViewModel() {
     }
 
     fun onFocusedShopChanged(newShop: Shop?) {
-        _selectedServiceArea.value?.let { area ->
+        // ・京都を選択した状態（=ViewPagerには京都のお店がズラッと並んでいる状態）で、
+        // 　福岡を拡大して福岡のお店を選択したときには、ViewPagerのリストは福岡になってくれないと困る。
+        // ・地域を選択していない状態では、
+        // 　お店を選択した時点では地域を勝手に選択されて（=ViewPagerで表示する地域が絞られて）ほしくない
+        // という要件を満たしたい。なので
+        _selectedServiceArea.value?.let { area -> // 地域が選択済みの場合に限り
             if (newShop != null) {
+                // 選択したお店のエリアが
                 val newArea = newShop.nearestServiceAreaIn(_serviceAreaList.value!!)
-                if (area != newArea) {
+                if (area != newArea) { // 選択中のものと違っていたら、エリアを変更する。
                     _selectedServiceArea.value = area
                 }
             }
