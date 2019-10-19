@@ -2,7 +2,6 @@ package io.github.yusukeiwaki.better_always_drink.shop_list
 
 import android.util.Log
 import androidx.lifecycle.*
-import com.google.android.gms.maps.model.LatLng
 import io.github.yusukeiwaki.better_always_drink.api.AlwaysApiClient
 import io.github.yusukeiwaki.better_always_drink.model.ServiceArea
 import io.github.yusukeiwaki.better_always_drink.model.Shop
@@ -18,9 +17,6 @@ class ShopListViewModel : ViewModel() {
     private val _selectedServiceArea = MutableLiveData<ServiceArea?>()
     private val _focusedShop = MutableLiveData<Shop?>()
 
-    private val _lastLatLng = MutableLiveData<LatLng>()
-    private val _lastZoomLevel = MutableLiveData<Float>()
-
     val serviceAreaList: LiveData<List<ServiceArea>> get() = _serviceAreaList
     val shopList: LiveData<List<Shop>> get() = _shopList
 
@@ -28,10 +24,6 @@ class ShopListViewModel : ViewModel() {
     val selectedServiceAreaValue get() = _selectedServiceArea.value
     val focusedShop: LiveData<Shop?> get() = _focusedShop.distinctUntilChanged()
     val hasFocusedShop get() = _focusedShop.value != null
-
-    val lastLatLng: LiveData<LatLng> get() = _lastLatLng.distinctUntilChanged()
-    val lastZoomLevel: LiveData<Float> get() = _lastZoomLevel.distinctUntilChanged()
-    val lastZoomLevelValue: Float? get() = _lastZoomLevel.value
 
     init {
         viewModelScope.launch {
@@ -103,13 +95,5 @@ class ShopListViewModel : ViewModel() {
             }
         }
         _focusedShop.value = newShop
-    }
-
-    fun onLatLngChanged(newLatLng: LatLng) {
-        _lastLatLng.value = newLatLng
-    }
-
-    fun onZoomLevelChanged(newZoomLevel: Float) {
-        _lastZoomLevel.value = newZoomLevel
     }
 }

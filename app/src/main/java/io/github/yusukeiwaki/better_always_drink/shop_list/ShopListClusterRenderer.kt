@@ -24,7 +24,7 @@ class ShopListClusterRenderer(
     private val context: Context,
     private val googleMap: GoogleMap,
     private val clusterManager: ClusterManager<Shop>,
-    private val viewModel: ShopListViewModel
+    private val mapViewModel: MapFragmentViewModel
 ) : DefaultClusterRenderer<Shop>(context, googleMap, clusterManager), GoogleMap.OnCameraIdleListener {
     private var serviceAreaList: List<ServiceArea>? = null
     private var lastZoomLevel: Float? = null
@@ -39,8 +39,8 @@ class ShopListClusterRenderer(
 
     override fun onCameraIdle() {
         val cameraPosition = googleMap.cameraPosition
-        viewModel.onLatLngChanged(cameraPosition.target)
-        viewModel.onZoomLevelChanged(cameraPosition.zoom)
+        mapViewModel.onLatLngChanged(cameraPosition.target)
+        mapViewModel.onZoomLevelChanged(cameraPosition.zoom)
     }
 
     fun updateServiceAreaList(newServiceAreaList: List<ServiceArea>) {
@@ -66,7 +66,7 @@ class ShopListClusterRenderer(
     }
 
     override fun shouldRenderAsCluster(cluster: Cluster<Shop>?): Boolean {
-        return viewModel.lastZoomLevelValue?.let { it < ZOOM_THRESHOLD } ?: true
+        return mapViewModel.lastZoomLevelValue?.let { it < ZOOM_THRESHOLD } ?: true
     }
 
     override fun onBeforeClusterRendered(cluster: Cluster<Shop>?, markerOptions: MarkerOptions?) {
