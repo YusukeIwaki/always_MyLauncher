@@ -15,7 +15,7 @@ object AlwaysApiClient {
         return monoV2Api.signIn(signInRequest)
     }
 
-    suspend fun listDrinkProviders(area: String): ListDrinkProvidersResponse {
+    suspend fun listDrinkProviders(area: String? = null): ListDrinkProvidersResponse {
         return monoV2Api.listDrinkProviders(area)
     }
 }

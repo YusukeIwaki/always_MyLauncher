@@ -1,25 +1,19 @@
 package io.github.yusukeiwaki.better_always_drink.shop_list
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
-import androidx.annotation.ColorInt
-import androidx.annotation.DrawableRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.observe
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.maps.android.clustering.ClusterManager
 import io.github.yusukeiwaki.better_always_drink.R
-import io.github.yusukeiwaki.better_always_drink.extension.observeOnce
 import io.github.yusukeiwaki.better_always_drink.model.Shop
 
 
@@ -28,8 +22,8 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
     private lateinit var bottomSheet: BottomSheetBehavior<View>
     private val viewModel: ShopListViewModel by viewModels()
+    private lateinit var viewPagerAdapter: ShopListAdapter
 
-    private val markers: ArrayList<Marker> = arrayListOf()
     private val alwaysShopUuid: String? by AlwaysPreference(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +39,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         viewPager = findViewById(R.id.view_pager)
         bottomSheet = BottomSheetBehavior.from(findViewById(R.id.bottom_sheet_container))
         bottomSheet.state = BottomSheetBehavior.STATE_HIDDEN
-        val viewPagerAdapter = ShopListAdapter()
+        viewPagerAdapter = ShopListAdapter()
 
         // 左右のカードを少しだけ見えるようにする
         viewPager.offscreenPageLimit = 2
@@ -55,26 +49,12 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
             page.translationX = -offset
         }
 
-        viewModel.shopList.observe(this) { newList ->
-            var handled = false
-            if (viewPagerAdapter.itemCount == 0) { // 初回に限り
-                alwaysShopUuid?.let { uuid -> // お気に入りのお店があれば
-                    val newPage = newList.indexOfFirst { shop -> shop.uuid == uuid }
-                    if (newPage >= 0) {
-                        // submit後にそのページにフォーカスを合わせる
-                        viewPagerAdapter.submitList(newList) {
-                            viewPager.setCurrentItem(newPage, false)
-                        }
-                        handled = true
-                    }
-                }
-            }
-
-            if (!handled) viewPagerAdapter.submitList(newList)
-        }
+        viewModel.selectedServiceArea.observe(this) { updateShopListOfViewPager() }
+        viewModel.shopList.observe(this) { updateShopListOfViewPager() }
         viewModel.focusedShop.observe(this) { focusedShop ->
             focusedShop?.let {
-                viewPager.currentItem = viewModel.shopList.value!!.indexOfFirst { shop -> shop.uuid == focusedShop.uuid }
+                val position = viewPagerAdapter.currentList.indexOfFirst { shop -> shop.uuid == focusedShop.uuid }
+                if (position >= 0) viewPager.currentItem = position
                 onShopFocused()
             } ?: run {
                 onShopUnfocused()
@@ -82,7 +62,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         }
         viewPager.registerOnPageChangeCallback(object: ViewPager2.OnPageChangeCallback(){
             override fun onPageSelected(position: Int) {
-                viewModel.onFocusedShopChanged(viewModel.shopList.value!![position])
+                viewModel.onFocusedShopChanged(viewPagerAdapter.currentList[position])
             }
         })
         bottomSheet.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
@@ -98,71 +78,88 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
+        val shopListClusterManager = ClusterManager<Shop>(this, googleMap)
+        val shopListClusterRenderer = ShopListClusterRenderer(this, googleMap, shopListClusterManager, viewModel)
+        shopListClusterManager.renderer = shopListClusterRenderer
+        googleMap.setOnCameraIdleListener(shopListClusterManager)
+        googleMap.setOnMarkerClickListener(shopListClusterManager)
+        googleMap.setOnInfoWindowClickListener(shopListClusterManager)
 
         // 初期位置を決めないと、アフリカの海が表示されるので、適当に初期位置を設定しておく。
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(33.2343214,131.6082574),15.0f))
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(34.6870728, 135.0490244),5.0f))
 
         viewModel.focusedShop.observe(this) { focusedShop ->
-            val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
-            markers.forEach { marker ->
-                (marker.tag as? Shop)?.let { shop ->
-                    if (shop.uuid == focusedShop?.uuid) {
-                        marker.setIcon(createBitmapDescriptorFromVector(R.drawable.ic_local_cafe_24dp, getColor(R.color.markerSelected)))
-                        marker.showInfoWindow()
+            shopListClusterRenderer.updateSelectedShop(focusedShop)
+
+            focusedShop?.let { shop ->
+                if (googleMap.cameraPosition.zoom < ShopListClusterRenderer.ZOOM_THRESHOLD) {
+                    val area = shop.nearestServiceAreaIn(viewModel.serviceAreaList.value!!)
+                    if (area != null) {
+                        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(shop.lat, shop.lng), area.zoom))
                     } else {
-                        marker.setIcon(defaultMarker)
-                        if (marker.isInfoWindowShown) {
-                            marker.hideInfoWindow()
-                        }
+                        googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(shop.lat, shop.lng)))
                     }
+                } else {
+                    googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(shop.lat, shop.lng)))
                 }
             }
-
-            focusedShop?.let {
-                googleMap.animateCamera(CameraUpdateFactory.newLatLng(LatLng(it.lat, it.lng)))
-            }
+        }
+        viewModel.serviceAreaList.observe(this) { serviceAreaList ->
+            shopListClusterRenderer.updateServiceAreaList(serviceAreaList)
         }
         viewModel.shopList.observe(this) { shopList ->
-            markers.clear()
-            val defaultMarker = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, getColor(R.color.markerDefault))
-            shopList.forEach { shop ->
-                val title =
-                    if (shop.roughLocationDescription.isNullOrBlank())
-                        shop.name
-                    else
-                        "${shop.roughLocationDescription} - ${shop.name}"
-
-                val markerOptions = MarkerOptions()
-                    .icon(defaultMarker)
-                    .position(LatLng(shop.lat, shop.lng))
-                    .title(title)
-                val marker = googleMap.addMarker(markerOptions)
-                marker.tag = shop
-                markers.add(marker)
-            }
-        }
-        viewModel.defaultCameraUpdate.observeOnce(this) { defaultCameraUpdate ->
-            if (!viewModel.hasFocusedShop) {
-                googleMap.moveCamera(defaultCameraUpdate)
+            shopListClusterManager.apply {
+                clearItems()
+                addItems(shopList)
+                cluster()
             }
         }
 
-        googleMap.setOnMarkerClickListener { marker ->
-            (marker.tag as? Shop)?.let { shop ->
-                viewModel.onFocusedShopChanged(shop)
-            }
+        shopListClusterManager.setOnClusterClickListener { cluster ->
+            cluster?.let{ shopListClusterRenderer.nearestServiceAreaFor(it) }?.let { serviceArea ->
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(serviceArea.lat, serviceArea.lng), serviceArea.zoom))
+                viewModel.onServiceAreaSelected(serviceArea)
+                true
+            } ?: false
+        }
+        shopListClusterManager.setOnClusterItemClickListener { shop ->
+            viewModel.onFocusedShopChanged(shop)
             false
         }
         googleMap.setOnMapClickListener {
-            if (!markers.any { it.isInfoWindowShown }) {
-                viewModel.onFocusedShopChanged(null)
+            viewModel.onFocusedShopChanged(null)
+        }
+    }
+
+    private fun updateShopListOfViewPager() {
+        val selectedServiceArea = viewModel.selectedServiceAreaValue
+        val newList = viewModel.shopList.value!!
+        val serviceAreas = viewModel.serviceAreaList.value!!
+
+        val newListFiltered = selectedServiceArea?.let {
+            newList.filter { shop -> shop.nearestServiceAreaIn(serviceAreas) == it }
+        } ?: newList
+
+        alwaysShopUuid?.let { uuid -> // お気に入りのお店があれば
+            // 表示しようとしているリストの中にそれがある場合には
+            newListFiltered.firstOrNull { it.uuid == uuid }?.let { alwaysShop ->
+                // 現在のエリアとお気に入りエリアが異なる場合には、お気に入りエリアをを強制的に設定し、
+                // あらためてupdateShopListOfViewPagerを呼び出してもらう
+                alwaysShop.nearestServiceAreaIn(serviceAreas)?.let { newServiceArea ->
+                    if (selectedServiceArea != newServiceArea) {
+                        viewModel.onServiceAreaSelected(newServiceArea)
+                        return
+                    }
+                }
+                // submit後にそのページにフォーカスを合わせる
+                viewPagerAdapter.submitList(newListFiltered) {
+                    viewModel.onFocusedShopChanged(alwaysShop)
+                }
+                return
             }
         }
-        googleMap.setOnCameraIdleListener {
-            val cameraPosition = googleMap.cameraPosition
-            viewModel.onLatLngChanged(cameraPosition.target)
-            viewModel.onZoomLevelChanged(cameraPosition.zoom)
-        }
+
+        viewPagerAdapter.submitList(newListFiltered)
     }
 
     private fun updateBottomSheetState(newState: Int) {
@@ -181,18 +178,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
         if (bottomSheet.state != BottomSheetBehavior.STATE_HIDDEN) {
             bottomSheet.state = BottomSheetBehavior.STATE_HIDDEN
         }
-    }
-
-    fun createBitmapDescriptorFromVector(@DrawableRes vectorResourceId: Int, @ColorInt tintColor: Int): BitmapDescriptor {
-        val vectorDrawable = ResourcesCompat.getDrawable(resources, vectorResourceId, null)
-            ?: return BitmapDescriptorFactory.defaultMarker()
-
-        val bitmap = Bitmap.createBitmap(vectorDrawable.intrinsicWidth, vectorDrawable.intrinsicHeight, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        vectorDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight())
-        DrawableCompat.setTint(vectorDrawable, tintColor)
-        vectorDrawable.draw(canvas)
-        return BitmapDescriptorFactory.fromBitmap(bitmap)
     }
 
     override fun onBackPressed() {

@@ -38,6 +38,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.1.0'
     implementation 'androidx.viewpager2:viewpager2:1.0.0-beta05'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
+    implementation 'com.google.maps.android:android-maps-utils:0.5'
     implementation 'com.google.android.material:material:1.1.0-beta01'
 
     implementation 'com.squareup.picasso:picasso:2.71828'
