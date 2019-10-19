@@ -22,6 +22,7 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
     private lateinit var bottomSheet: BottomSheetBehavior<View>
     private val viewModel: ShopListViewModel by viewModels()
+    private val mapViewModel: MapFragmentViewModel by viewModels()
     private lateinit var viewPagerAdapter: ShopListAdapter
 
     private val alwaysShopUuid: String? by AlwaysPreference(this)
@@ -79,14 +80,16 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
         val shopListClusterManager = ClusterManager<Shop>(this, googleMap)
-        val shopListClusterRenderer = ShopListClusterRenderer(this, googleMap, shopListClusterManager, viewModel)
+        val shopListClusterRenderer = ShopListClusterRenderer(this, googleMap, shopListClusterManager, mapViewModel)
         shopListClusterManager.renderer = shopListClusterRenderer
         googleMap.setOnCameraIdleListener(shopListClusterManager)
         googleMap.setOnMarkerClickListener(shopListClusterManager)
         googleMap.setOnInfoWindowClickListener(shopListClusterManager)
 
         // 初期位置を決めないと、アフリカの海が表示されるので、適当に初期位置を設定しておく。
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(34.6870728, 135.0490244),5.0f))
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+            mapViewModel.lastLatLngValue ?: LatLng(34.6870728, 135.0490244),
+            mapViewModel.lastZoomLevelValue ?: 5.0f))
 
         viewModel.focusedShop.observe(this) { focusedShop ->
             shopListClusterRenderer.updateSelectedShop(focusedShop)
