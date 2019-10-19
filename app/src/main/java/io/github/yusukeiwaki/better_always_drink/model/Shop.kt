@@ -21,6 +21,12 @@ data class Shop(
 
     override fun getPosition(): LatLng = LatLng(lat, lng)
 
+    fun nearestServiceAreaIn(serviceAreas: List<ServiceArea>): ServiceArea? {
+        return serviceAreas.minBy { area ->
+            (lat - area.lat) * (lat - area.lat) + (lng - area.lng) * (lng - area.lng)
+        }
+    }
+
     class DiffUtilCallback: DiffUtil.ItemCallback<Shop>() {
         override fun areItemsTheSame(oldItem: Shop, newItem: Shop): Boolean {
             return oldItem.uuid == newItem.uuid

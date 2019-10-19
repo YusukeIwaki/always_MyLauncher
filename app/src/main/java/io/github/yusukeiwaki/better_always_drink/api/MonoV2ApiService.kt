@@ -10,5 +10,5 @@ interface MonoV2ApiService {
     suspend fun signIn(@Body req: SignInRequest): SignInResponse
 
     @GET("pb/subscription-plan/751acbbe/provider")
-    suspend fun listDrinkProviders(@Query("area")area: String): ListDrinkProvidersResponse
+    suspend fun listDrinkProviders(@Query("area")area: String?): ListDrinkProvidersResponse
 }

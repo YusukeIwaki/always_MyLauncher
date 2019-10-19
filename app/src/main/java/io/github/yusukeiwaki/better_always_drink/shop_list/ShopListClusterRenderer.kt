@@ -15,7 +15,9 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.Cluster
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.clustering.view.DefaultClusterRenderer
+import com.google.maps.android.ui.IconGenerator
 import io.github.yusukeiwaki.better_always_drink.R
+import io.github.yusukeiwaki.better_always_drink.model.ServiceArea
 import io.github.yusukeiwaki.better_always_drink.model.Shop
 
 class ShopListClusterRenderer(
@@ -24,16 +26,25 @@ class ShopListClusterRenderer(
     private val clusterManager: ClusterManager<Shop>,
     private val viewModel: ShopListViewModel
 ) : DefaultClusterRenderer<Shop>(context, googleMap, clusterManager), GoogleMap.OnCameraIdleListener {
+    private var serviceAreaList: List<ServiceArea>? = null
     private var lastZoomLevel: Float? = null
     private var selectedShop: Shop? = null
     private val defaultMarkerBitmap = createBitmapDescriptorFromVector(R.drawable.ic_place_default_24dp, context.getColor(R.color.markerDefault))
     private val selectedMarkerBitmap = createBitmapDescriptorFromVector(R.drawable.ic_local_cafe_24dp, context.getColor(R.color.markerSelected))
 
+    companion object {
+        // クラスター表示とアイコン表示の境目となるズームレベル
+        val ZOOM_THRESHOLD = 10.0f
+    }
+
     override fun onCameraIdle() {
         val cameraPosition = googleMap.cameraPosition
         viewModel.onLatLngChanged(cameraPosition.target)
         viewModel.onZoomLevelChanged(cameraPosition.zoom)
-        lastZoomLevel = cameraPosition.zoom
+    }
+
+    fun updateServiceAreaList(newServiceAreaList: List<ServiceArea>) {
+        serviceAreaList = newServiceAreaList
     }
 
     fun updateSelectedShop(shop: Shop?) {
@@ -55,7 +66,31 @@ class ShopListClusterRenderer(
     }
 
     override fun shouldRenderAsCluster(cluster: Cluster<Shop>?): Boolean {
-        return lastZoomLevel?.let { it < 10.0f } ?: true
+        return viewModel.lastZoomLevelValue?.let { it < ZOOM_THRESHOLD } ?: true
+    }
+
+    override fun onBeforeClusterRendered(cluster: Cluster<Shop>?, markerOptions: MarkerOptions?) {
+        val nearestServiceArea = nearestServiceAreaFor(cluster)
+        if (nearestServiceArea == null) {
+            super.onBeforeClusterRendered(cluster, markerOptions)
+            return
+        }
+
+        markerOptions?.apply {
+            icon(BitmapDescriptorFactory.fromBitmap(IconGenerator(context).makeIcon(nearestServiceArea.name)))
+        }
+    }
+
+    fun nearestServiceAreaFor(cluster: Cluster<Shop>?): ServiceArea? {
+        val clusterPosition = cluster?.position
+        val currentServiceAreaList = serviceAreaList
+        if (clusterPosition == null || currentServiceAreaList == null) {
+            return null
+        }
+
+        return currentServiceAreaList.minBy { area ->
+            (area.lat - clusterPosition.latitude) * (area.lat - clusterPosition.latitude) + (area.lng - clusterPosition.longitude) * (area.lng - clusterPosition.longitude)
+        }
     }
 
     override fun onBeforeClusterItemRendered(item: Shop?, markerOptions: MarkerOptions?) {

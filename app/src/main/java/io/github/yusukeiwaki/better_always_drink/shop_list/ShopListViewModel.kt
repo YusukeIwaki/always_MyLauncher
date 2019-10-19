@@ -6,6 +6,7 @@ import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import io.github.yusukeiwaki.better_always_drink.api.AlwaysApiClient
+import io.github.yusukeiwaki.better_always_drink.model.ServiceArea
 import io.github.yusukeiwaki.better_always_drink.model.Shop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,8 +14,10 @@ import kotlinx.coroutines.withContext
 
 class ShopListViewModel : ViewModel() {
 
+    private val _serviceAreaList = MutableLiveData<List<ServiceArea>>(emptyList())
     private val _shopList = MutableLiveData<List<Shop>>(emptyList())
 
+    private val _selectedServiceArea = MutableLiveData<ServiceArea?>()
     private val _focusedShop = MutableLiveData<Shop?>()
 
     private val _lastLatLng = MutableLiveData<LatLng>()
@@ -22,22 +25,40 @@ class ShopListViewModel : ViewModel() {
 
     private val _defaultCameraUpdate = MutableLiveData<CameraUpdate>()
 
+    val serviceAreaList: LiveData<List<ServiceArea>> get() = _serviceAreaList
     val shopList: LiveData<List<Shop>> get() = _shopList
 
+    val selectedServiceArea: LiveData<ServiceArea?> get() = _selectedServiceArea.distinctUntilChanged()
+    val selectedServiceAreaValue get() = _selectedServiceArea.value
     val focusedShop: LiveData<Shop?> get() = _focusedShop.distinctUntilChanged()
     val hasFocusedShop get() = _focusedShop.value != null
 
     val lastLatLng: LiveData<LatLng> get() = _lastLatLng.distinctUntilChanged()
     val lastZoomLevel: LiveData<Float> get() = _lastZoomLevel.distinctUntilChanged()
+    val lastZoomLevelValue: Float? get() = _lastZoomLevel.value
 
     val defaultCameraUpdate: LiveData<CameraUpdate> get() = _defaultCameraUpdate.distinctUntilChanged()
 
     init {
-        val area = "3a2eefa2" //福岡
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { AlwaysApiClient.listDrinkProviders(area) }
+                withContext(Dispatchers.IO) { AlwaysApiClient.listDrinkProviders() }
             }.onSuccess { response ->
+                val serviceAreaList = response.places.map { place ->
+                    ServiceArea(
+                        uuid = place.uuid,
+                        name = place.name,
+                        lat = place.lat,
+                        lng = place.lng,
+                        zoom = place.zoom.toFloat()
+                    )
+                }.toMutableList()
+                serviceAreaList.firstOrNull { area -> area.zoom < ShopListClusterRenderer.ZOOM_THRESHOLD }?.let { wideArea ->
+                    onWideServiceAreaLoaded(wideArea)
+                    serviceAreaList.remove(wideArea)
+                }
+                onServiceAreaListLoaded(serviceAreaList)
+
                 val shopList = response.menus.map { menu ->
                     Shop(
                         uuid = menu.pbProvider.uuid,
@@ -51,14 +72,20 @@ class ShopListViewModel : ViewModel() {
                         pictureUrls = menu.pbProvider.pictures.map { picture -> picture.pictureUrl.largeUrl })
                 }
                 onShopListLoaded(shopList)
-
-                response.places.find { it.uuid == area }?.let { fukuoka ->
-                    onDefaultPositionLoaded(LatLng(fukuoka.lat, fukuoka.lng), fukuoka.zoom.toFloat())
-                }
             }.onFailure { throwable ->
                 Log.e("ShopListViewModel", "error", throwable)
             }
         }
+    }
+
+    // 「全国」のエリア情報が取得できたときに呼ばれる。
+    private fun onWideServiceAreaLoaded(wideServiceArea: ServiceArea) {
+        _defaultCameraUpdate.value = CameraUpdateFactory.newLatLngZoom(LatLng(wideServiceArea.lat, wideServiceArea.lng), wideServiceArea.zoom)
+    }
+
+    // エリア情報一覧が取得できたときに呼ばれる。ただし「全国」は含めていない。
+    private fun onServiceAreaListLoaded(serviceAreaList: List<ServiceArea>) {
+        _serviceAreaList.value = serviceAreaList
     }
 
     // ショップデータ一覧が取得できたときに呼ばれる
@@ -66,11 +93,19 @@ class ShopListViewModel : ViewModel() {
         _shopList.value = newShopList
     }
 
-    private fun onDefaultPositionLoaded(defaultPosition: LatLng, defaultZoomLevel: Float) {
-        _defaultCameraUpdate.value = CameraUpdateFactory.newLatLngZoom(defaultPosition, defaultZoomLevel)
+    fun onServiceAreaSelected(newServiceArea: ServiceArea) {
+        _selectedServiceArea.value = newServiceArea
     }
 
     fun onFocusedShopChanged(newShop: Shop?) {
+        _selectedServiceArea.value?.let { area ->
+            if (newShop != null) {
+                val newArea = newShop.nearestServiceAreaIn(_serviceAreaList.value!!)
+                if (area != newArea) {
+                    _selectedServiceArea.value = area
+                }
+            }
+        }
         _focusedShop.value = newShop
     }
 
