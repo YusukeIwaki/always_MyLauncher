@@ -147,7 +147,6 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
             newList.filter { shop -> shop.nearestServiceAreaIn(serviceAreas) == it }
         } ?: newList
 
-        var handled = false
         alwaysShopUuid?.let { uuid -> // お気に入りのお店があれば
             // 表示しようとしているリストの中にそれがある場合には
             newListFiltered.firstOrNull { it.uuid == uuid }?.let { alwaysShop ->
@@ -163,11 +162,11 @@ class ShopListActivity : AppCompatActivity(), OnMapReadyCallback {
                 viewPagerAdapter.submitList(newListFiltered) {
                     viewModel.onFocusedShopChanged(alwaysShop)
                 }
-                handled = true
+                return
             }
         }
 
-        if (!handled) viewPagerAdapter.submitList(newListFiltered)
+        viewPagerAdapter.submitList(newListFiltered)
     }
 
     private fun updateBottomSheetState(newState: Int) {
