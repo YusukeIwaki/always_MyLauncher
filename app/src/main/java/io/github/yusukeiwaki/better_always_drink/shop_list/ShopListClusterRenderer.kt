@@ -101,7 +101,12 @@ class ShopListClusterRenderer(
                 } else {
                     icon(defaultMarkerBitmap)
                 }
-                title(shop.name)
+
+                if (shop.roughLocationDescription.isNullOrBlank()) {
+                    title(shop.name)
+                } else {
+                    title("${shop.roughLocationDescription} - ${shop.name}")
+                }
             }
         }
     }
