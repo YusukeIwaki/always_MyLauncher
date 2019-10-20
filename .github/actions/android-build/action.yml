@@ -1,0 +1,12 @@
+name: android-build
+description: execute ./gradlew assembleDebug
+inputs:
+  command:
+    description: 'gradlew command'
+    required: true
+    default: './gradlew assembleDebug'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.command }}
