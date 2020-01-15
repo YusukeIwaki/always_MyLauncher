@@ -4,10 +4,10 @@
     <data>
         <variable
             name="shop"
-            type="io.github.yusukeiwaki.better_always_drink.model.Shop" />
+            type="io.github.yusukeiwaki.always_launcher.model.Shop" />
     </data>
 
-    <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopDetailPictureListView
+    <io.github.yusukeiwaki.always_launcher.shop_list.detail.ShopDetailPictureListView
         android:layout_width="match_parent"
         android:layout_height="240dp"
         app:shop="@{shop}"/>

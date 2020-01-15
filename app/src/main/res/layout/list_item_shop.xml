@@ -4,7 +4,7 @@
     <data>
         <variable
             name="shop"
-            type="io.github.yusukeiwaki.better_always_drink.model.Shop" />
+            type="io.github.yusukeiwaki.always_launcher.model.Shop" />
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -13,7 +13,7 @@
         android:layout_margin="@dimen/shop_card_margin"
         app:cardUseCompatPadding="true">
 
-        <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopDetailListView
+        <io.github.yusukeiwaki.always_launcher.shop_list.detail.ShopDetailListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:shop="@{shop}"/>

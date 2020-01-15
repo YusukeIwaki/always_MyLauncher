@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#73A7DA</color>
+    <color name="colorPrimaryDark">#2085d0</color>
+    <color name="colorAccent">#2a83db</color>
+
+    <color name="markerDefault">#00718D</color>
+    <color name="markerSelected">#24A5F5</color>
+</resources>

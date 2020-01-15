@@ -7,7 +7,7 @@
             type="String" />
     </data>
 
-    <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopThumbnailImageView
+    <io.github.yusukeiwaki.always_launcher.shop_list.detail.ShopThumbnailImageView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scaleType="centerCrop"
