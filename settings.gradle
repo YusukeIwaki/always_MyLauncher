@@ -1,3 +1,4 @@
 include ':app'
-include ':launcher_icon'
-rootProject.name='BetterAlwaysDrink'
+include ':launcher_icon_drink'
+include ':launcher_icon_lunch'
+rootProject.name='always_MyLauncher'

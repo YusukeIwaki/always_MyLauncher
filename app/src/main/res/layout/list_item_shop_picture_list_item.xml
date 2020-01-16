@@ -13,7 +13,7 @@
         android:layout_margin="8dp"
         app:cardElevation="4dp">
 
-        <io.github.yusukeiwaki.better_always_drink.shop_list.detail.ShopPictureImageView
+        <io.github.yusukeiwaki.always_launcher.shop_list.detail.ShopPictureImageView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
