@@ -13,12 +13,29 @@ class ShopListViewModel : ViewModel() {
 
     private val _serviceAreaList = MutableLiveData<List<ServiceArea>>(emptyList())
     private val _shopList = MutableLiveData<List<Shop>>(emptyList())
+    private val _secondaryServiceShopList = MutableLiveData<List<Shop>>(emptyList())
 
     private val _selectedServiceArea = MutableLiveData<ServiceArea?>()
     private val _focusedShop = MutableLiveData<Shop?>()
 
     val serviceAreaList: LiveData<List<ServiceArea>> get() = _serviceAreaList
-    val shopList: LiveData<List<Shop>> get() = _shopList
+    val shopList: LiveData<List<Shop>> get() = MediatorLiveData<List<Shop>>().also { result ->
+        result.value = compositeShopList()
+        result.addSource(_shopList) { result.value = compositeShopList() }
+        result.addSource(_secondaryServiceShopList) { result.value = compositeShopList() }
+    }
+    private fun compositeShopList(): List<Shop> {
+        val primary = _shopList.value!!
+        val secondary = _secondaryServiceShopList.value!!
+
+        if (secondary.isEmpty()) {
+            return primary
+        } else {
+            return primary.map { shop ->
+                shop.copy(hasSecondaryService = secondary.any { it.uuid == shop.uuid })
+            }
+        }
+    }
 
     val selectedServiceArea: LiveData<ServiceArea?> get() = _selectedServiceArea.distinctUntilChanged()
     val selectedServiceAreaValue get() = _selectedServiceArea.value
@@ -28,7 +45,7 @@ class ShopListViewModel : ViewModel() {
     init {
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { AlwaysApiClient.listProviders() }
+                withContext(Dispatchers.IO) { AlwaysApiClient.listPrimaryServiceProviders() }
             }.onSuccess { response ->
                 val serviceAreaList = response.places.map { place ->
                     ServiceArea(
@@ -62,6 +79,26 @@ class ShopListViewModel : ViewModel() {
             }.onFailure { throwable ->
                 Log.e("ShopListViewModel", "error", throwable)
             }
+
+            runCatching {
+                withContext(Dispatchers.IO) { AlwaysApiClient.listSecondaryServiceProviders() }
+            }.onSuccess { response ->
+                val shopList = response.menus.map { menu ->
+                    Shop(
+                        uuid = menu.pbProvider.uuid,
+                        name = menu.pbProvider.name,
+                        description = menu.pbProvider.description,
+                        roughLocationDescription = menu.pbProvider.area,
+                        businessHoursDescription = menu.pbProvider.businessHours,
+                        lat = menu.pbProvider.location.lat,
+                        lng = menu.pbProvider.location.lon,
+                        thumbnailUrl = menu.pictures.firstOrNull()?.pictureUrl?.largeUrl,
+                        pictureUrls = menu.pbProvider.pictures.map { picture -> picture.pictureUrl.largeUrl })
+                }
+                onSecondaryServiceShopListLoaded(shopList)
+            }.onFailure { throwable ->
+                Log.e("ShopListViewModel", "error", throwable)
+            }
         }
     }
 
@@ -73,6 +110,10 @@ class ShopListViewModel : ViewModel() {
     // ショップデータ一覧が取得できたときに呼ばれる
     private fun onShopListLoaded(newShopList: List<Shop>) {
         _shopList.value = newShopList
+    }
+
+    private fun onSecondaryServiceShopListLoaded(newShopList: List<Shop>) {
+        _secondaryServiceShopList.value = newShopList
     }
 
     fun onServiceAreaSelected(newServiceArea: ServiceArea) {

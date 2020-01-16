@@ -25,14 +25,18 @@ android {
         lunch {
             dimension 'serviceType'
             applicationId "io.github.yusukeiwaki.always_lunch_launcher"
-            buildConfigField "String", "SERVICE_UUID", '"15967c8f"'
-            buildConfigField "String", "SERVICE_TYPE", '"lunch"'
+            buildConfigField "String", "PRIMARY_SERVICE_UUID", '"15967c8f"'
+            buildConfigField "String", "PRIMARY_SERVICE_TYPE", '"lunch"'
+            buildConfigField "String", "SECONDARY_SERVICE_UUID", '"751acbbe"'
+            buildConfigField "String", "SECONDARY_SERVICE_TYPE", '"drink"'
         }
         drink {
             dimension 'serviceType'
             applicationId "io.github.yusukeiwaki.always_drink_launcher"
-            buildConfigField "String", "SERVICE_UUID", '"751acbbe"'
-            buildConfigField "String", "SERVICE_TYPE", '"drink"'
+            buildConfigField "String", "PRIMARY_SERVICE_UUID", '"751acbbe"'
+            buildConfigField "String", "PRIMARY_SERVICE_TYPE", '"drink"'
+            buildConfigField "String", "SECONDARY_SERVICE_UUID", '"15967c8f"'
+            buildConfigField "String", "SECONDARY_SERVICE_TYPE", '"lunch"'
         }
     }
     dataBinding {

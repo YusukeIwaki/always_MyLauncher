@@ -27,7 +27,10 @@ class ShopDetailListView : RecyclerView {
             }
             groupAdapter.add(ShopDetailDescriptionItem(shop))
             groupAdapter.add(ShopDetailDescriptionKeyValueItem(shop, ShopDetailDescriptionKeyValueItem.Key.BusinessHours))
-            groupAdapter.add(ShopDetailActionButtonsItem(shop))
+            if (shop.hasSecondaryService == true) {
+                groupAdapter.add(ShopDetailSecondaryServiceActionButtonsItem(shop))
+            }
+            groupAdapter.add(ShopDetailPrimaryServiceActionButtonsItem(shop))
         }
     }
 }
