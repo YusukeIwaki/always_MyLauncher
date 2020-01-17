@@ -1,25 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="24dp"
-        android:layout_marginBottom="24dp">
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="48dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/always_button"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:text="set as ALWAYS"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            android:text="set as ALWAYS" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/browse_button"
+            style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:text="パスを使う"
-            style="@style/Widget.MaterialComponents.Button"
-            android:backgroundTint="@color/colorAccent"/>
+            android:backgroundTint="@color/colorAccent"
+            android:text="パスを使う" />
     </FrameLayout>
 </layout>

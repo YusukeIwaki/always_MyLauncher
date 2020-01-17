@@ -13,7 +13,8 @@ data class Shop(
     val lat: Double,
     val lng: Double,
     val thumbnailUrl: String?,
-    val pictureUrls: List<String>
+    val pictureUrls: List<String>,
+    val hasSecondaryService: Boolean? = null
 ) : ClusterItem {
     override fun getSnippet(): String? = null
 

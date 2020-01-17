@@ -16,7 +16,11 @@ object AlwaysApiClient {
         return monoV2Api.signIn(signInRequest)
     }
 
-    suspend fun listProviders(area: String? = null): ListProvidersResponse {
-        return monoV2Api.listProviders(BuildConfig.SERVICE_UUID, area)
+    suspend fun listPrimaryServiceProviders(area: String? = null): ListProvidersResponse {
+        return monoV2Api.listProviders(BuildConfig.PRIMARY_SERVICE_UUID, area)
+    }
+
+    suspend fun listSecondaryServiceProviders(area: String? = null): ListProvidersResponse {
+        return monoV2Api.listProviders(BuildConfig.SECONDARY_SERVICE_UUID, area)
     }
 }
